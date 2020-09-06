@@ -142,9 +142,10 @@ after d a = do
   let rehook t = after (d - t^.elapsed) a *> pure NoCatch
   tHookF InputHook d a rehook
 
--- | Perform an action immediately after the current action is finished. NOTE:
--- there is no guarantee that another event doesn't outrace this, only that it
--- will happen as soon as the CPU gets to it.
+-- | Perform an action immediately after the current action is finished.
+--
+-- NOTE: there is no guarantee that another event doesn't outrace this, only
+-- that it will happen as soon as the CPU gets to it.
 whenDone :: MonadK m
   => m ()
   -> m ()
