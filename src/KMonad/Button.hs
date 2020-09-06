@@ -45,6 +45,7 @@ module KMonad.Button
   , tapNextRelease
   , tapHoldNextRelease
   , tapMacro
+  , trackingTapHold
   )
 where
 
@@ -209,7 +210,7 @@ tapNext t h = onPress $ hookF InputHook $ \e -> do
 
 -- | Like 'tapNext', except that after some interval it switches anyways
 tapHoldNext :: Milliseconds -> Button -> Button -> Button
-tapHoldNext ms t h = onPress $ within ms (pure $ const True) (press h) $ \tr -> do
+tapHoldNext ms t h = onPress $ within ms matchAny (press h) $ \tr -> do
   p <- matchMy Release
   if p $ tr^.event
     then tap t   *> pure Catch
@@ -345,6 +346,33 @@ layerNext t = onPress $ do
   layerOp (PushLayer t)
   await isPress (\_ -> whenDone (layerOp $ PopLayer t) *> pure NoCatch)
 
+
+--------------------------------------------------------------------------------
+-- This is the first definition of a button that catches output events to decide
+-- how to behave. I think there are patterns here that we should abstract away,
+-- but first make it work, then make it good.
+
+-- | A button that tracks output changes and reapplies them to 'tap' if necessary.
+--
+-- Consider the following scenario, you (P=press, R=release):
+-- P-shift P-a R-shift R-a.
+--
+-- In a non-taphold this would get you an 'A', but many tap-holds can only
+-- trigger a tap after release, therefore giving you an 'a'. This button tracks
+-- output events to filter for: "Emission of the release of a keycode". If we
+-- catch only the release of a keycode, that must mean it was pressed before we
+-- started tracking. Any tracked keycode that released between press and release
+-- of this button (if we are tapping) is put 'around' the tap effect,
+-- essentially ensuring that we /reshift/ the 'A' from the example.
+trackingTapNext :: ()
+  => Set Keycode -- ^ The keycodes of releases to track in output
+  -> Button      -- ^ The button to execute on tap
+  -> Button      -- ^ The button to execute on hold
+  -> Button      -- ^ The resulting button
+trackingTapNext rs t h = onPress $ do
+
+
+  undefined
 
 -- -- |
 -- weirdTapNextRelease :: Button -> Button -> Button

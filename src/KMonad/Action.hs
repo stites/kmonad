@@ -22,6 +22,7 @@ module KMonad.Action
   , Timeout(..)
   , HookLocation(..)
   , Hook(..)
+  , newHookId
 
     -- * Lenses
   , HasHook(..)
@@ -43,6 +44,7 @@ module KMonad.Action
     -- $combs
   , my
   , matchMy
+  , matchAny
   , after
   , whenDone
   , await
@@ -57,56 +59,9 @@ where
 
 import KMonad.Prelude hiding (timeout)
 
+import KMonad.Hooks
 import KMonad.Keyboard
 import KMonad.Util
-
---------------------------------------------------------------------------------
--- $keyfun
-
--- | Boolean isomorph signalling wether an event should be caught or not
-data Catch = Catch | NoCatch deriving (Show, Eq)
-
-instance Semigroup Catch where
-  NoCatch <> NoCatch = NoCatch
-  _       <> _       = Catch
-
-instance Monoid Catch where
-  mempty = NoCatch
-
--- | The packet used to trigger a KeyFun, containing info about the event and
--- how long since the Hook was registered.
-data Trigger = Trigger
-  { _elapsed :: Milliseconds -- ^ Time elapsed since hook was registered
-  , _event   :: KeyEvent     -- ^ The key event triggering this call
-  }
-makeClassy ''Trigger
-
-
---------------------------------------------------------------------------------
--- $hook
---
--- The general structure of the 'Hook' record, that defines the most general way
--- of registering a 'KeyEvent' function.
-
--- | ADT signalling where to install a hook
-data HookLocation
-  = InputHook  -- ^ Install the hook immediately after receiving a 'KeyEvent'
-  | OutputHook -- ^ Install the hook just before emitting a 'KeyEvent'
-  deriving (Eq, Show)
-
--- | A 'Timeout' value describes how long to wait and what to do upon timeout
-data Timeout m = Timeout
-  { _delay  :: Milliseconds -- ^ Delay before timeout action is triggered
-  , _action :: m ()         -- ^ Action to perform upon timeout
-  }
-makeClassy ''Timeout
-
--- | The content for 1 key hook
-data Hook m = Hook
-  { _hTimeout :: Maybe (Timeout m)  -- ^ Optional timeout machinery
-  , _keyH     :: Trigger -> m Catch -- ^ The function to call on the next 'KeyEvent'
-  }
-makeClassy ''Hook
 
 
 --------------------------------------------------------------------------------
@@ -137,7 +92,9 @@ class Monad m => MonadKIO m where
   -- | Pause or unpause event processing
   hold       :: Bool -> m ()
   -- | Register a callback hook
-  register   :: HookLocation -> Hook m -> m ()
+  register   :: HookLocation -> Hook m -> m HookId
+  -- | Unregister a hook manually
+  unregister :: HookId -> m Bool
   -- | Run a layer-stack manipulation
   layerOp    :: LayerOp -> m ()
   -- | Insert an event in the input queue
@@ -161,8 +118,8 @@ my :: MonadK m => Switch -> m KeyEvent
 my s = mkKeyEvent s <$> myBinding
 
 -- | Register a simple hook without a timeout
-hookF :: MonadKIO m => HookLocation -> (KeyEvent -> m Catch) -> m ()
-hookF l f = register l . Hook Nothing $ \t -> f (t^.event)
+hookF :: MonadKIO m => HookLocation -> (KeyEvent -> m Catch) -> m HookId
+hookF l f = register l . Hook Nothing OneShot $ \t -> f (t^.event)
 
 -- | Register a hook with a timeout
 tHookF :: MonadK m
@@ -170,8 +127,8 @@ tHookF :: MonadK m
   -> Milliseconds         -- ^ The timeout delay for the hook
   -> m ()                 -- ^ The action to perform on timeout
   -> (Trigger -> m Catch) -- ^ The action to perform on trigger
-  -> m ()                 -- ^ The resulting action
-tHookF l d a f = register l $ Hook (Just $ Timeout d a) f
+  -> m HookId             -- ^ The resulting action
+tHookF l d a f = register l $ Hook (Just $ Timeout d a) OneShot f
 
 -- | Perform an action after a period of time has elapsed
 --
@@ -197,6 +154,10 @@ whenDone = after 0
 -- | Create a KeyPred that matches the Press or Release of the current button.
 matchMy :: MonadK m => Switch -> m KeyPred
 matchMy s = (==) <$> my s
+
+-- | Create a KeyPred that matches any key event
+matchAny :: MonadK m => m KeyPred
+matchAny = pure $ const True
 
 -- | Wait for an event to match a predicate and then execute an action
 await :: MonadKIO m => KeyPred -> (KeyEvent -> m Catch) -> m ()
