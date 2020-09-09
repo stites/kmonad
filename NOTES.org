@@ -1,0 +1,4 @@
+* Coding guidelines:
+- We should really isolate OS-specific code into very specific locations, and
+  then just import whichever of 3 libraries we need. The less 'CPP' statements
+  we use the better.
