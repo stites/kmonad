@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass , CPP #-}
 {-|
 Module      : KMonad.Keyboard
 Description : Basic keyboard types
@@ -38,14 +38,19 @@ module KMonad.Keyboard
   , LMap
 
     -- * Reexports
-  , module KMonad.Keyboard.Keycode
+  , module K
   )
 
 where
 
 import KMonad.Prelude
 
-import KMonad.Keyboard.Keycode
+#ifdef darwin_HOST_OS
+#endif
+
+#ifdef linux_HOST_OS
+import KMonad.Keyboard.IO.Linux.Keycode as K
+#endif
 
 import qualified Data.LayerStack as Ls
 

@@ -35,7 +35,6 @@ import RIO.Partial (toEnum)
 
 import KMonad.Keyboard
 import KMonad.Keyboard.IO
-import KMonad.Util
 
 
 --------------------------------------------------------------------------------

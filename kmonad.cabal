@@ -72,7 +72,6 @@ library
       KMonad.Args.Types
       KMonad.Button
       KMonad.Keyboard
-      KMonad.Keyboard.Keycode
       KMonad.Keyboard.ComposeSeq
       KMonad.Keyboard.IO
       KMonad.Prelude
@@ -81,6 +80,7 @@ library
   if os(linux)
     exposed-modules:
       KMonad.Keyboard.IO.Linux.DeviceSource
+      KMonad.Keyboard.IO.Linux.Keycode
       KMonad.Keyboard.IO.Linux.Types
       KMonad.Keyboard.IO.Linux.UinputSink
     c-sources:
