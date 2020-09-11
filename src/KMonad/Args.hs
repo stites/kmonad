@@ -20,6 +20,8 @@ import KMonad.Args.Joiner
 import KMonad.Args.Parser
 import KMonad.Args.Types
 
+import KMonad.Klang.REPL
+
 --------------------------------------------------------------------------------
 --
 
@@ -33,7 +35,10 @@ run = getCmd >>= runCmd
 -- 2. Parse the config-file
 -- 3. Maybe start KMonad
 runCmd :: Cmd -> IO ()
-runCmd c = do
+runCmd c
+  | c^.silly  = runREPL
+  | otherwise = do
+
   o <- logOptionsHandle stdout False <&> setLogMinLevel (c^.logLvl)
   withLogFunc o $ \f -> runRIO f $ do
     cfg <- loadConfig $ c^.cfgFile

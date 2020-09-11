@@ -31,6 +31,7 @@ data Cmd = Cmd
   { _cfgFile :: FilePath -- ^ Which file to read the config from
   , _dryRun  :: Bool     -- ^ Flag to indicate we are only test-parsing
   , _logLvl  :: LogLevel -- ^ Level of logging to use
+  , _silly   :: Bool     -- ^ FIXME: silly way to start REPL
   }
   deriving Show
 makeClassy ''Cmd
@@ -51,7 +52,13 @@ getCmd = customExecParser (prefs showHelpOnEmpty) $ info (cmdP <**> helper)
 
 -- | Parse the full command
 cmdP :: Parser Cmd
-cmdP = Cmd <$> fileP <*> dryrunP <*> levelP
+cmdP = Cmd <$> fileP <*> dryrunP <*> levelP <*> sillyP
+
+sillyP :: Parser Bool
+sillyP = switch
+  ( short 'x'
+  <> long "silly"
+  <> help "Start the Klang REPL")
 
 -- | Parse a filename that points us at the config-file
 fileP :: Parser FilePath
