@@ -1,15 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-|
-Module      : KMonad.Keyboard.IO.Linux.DeviceSource
+Module      : KMonad.Keyboard.Linux.IO.DeviceSource
 Description : Load and acquire a linux /dev/input device
 Copyright   : (c) David Janssen, 2019
 License     : MIT
 Maintainer  : janssen.dhj@gmail.com
 Stability   : experimental
 Portability : portable
-
 -}
-module KMonad.Keyboard.IO.Linux.DeviceSource
+module KMonad.Keyboard.Linux.IO.DeviceSource
   ( deviceSource
   , deviceSource64
 
@@ -22,7 +21,9 @@ import KMonad.Prelude
 import Foreign.C.Types
 import System.Posix
 
-import KMonad.Keyboard.IO.Linux.Types
+import KMonad.Keyboard.IO
+import KMonad.Keyboard.Types
+import KMonad.Keyboard.Linux.Types
 import KMonad.Util
 
 import qualified Data.Serialize as B (decode)
@@ -66,7 +67,7 @@ ioctl_keyboard (Fd h) b = fromIntegral <$>
 data KeyEventParser = KeyEventParser
   { _nbytes :: !Int
     -- ^ Size of 1 input event in bytes
-  , _prs    :: !(B.ByteString -> Either String LinuxKeyEvent)
+  , _prs    :: !(B.ByteString -> Either String LinuxEvent)
     -- ^ Function to convert bytestring to event
   }
 makeClassy ''KeyEventParser
@@ -76,13 +77,13 @@ defEventParser :: KeyEventParser
 defEventParser = KeyEventParser 24 decode64
 
 -- | The KeyEventParser that works on my 64-bit Linux environment
-decode64 :: B.ByteString -> Either String LinuxKeyEvent
-decode64 bs = (linuxKeyEvent . fliptup) <$> result
+decode64 :: B.ByteString -> Either String LinuxEvent
+decode64 bs = mkEvent <$> result
   where
     result :: Either String (Int32, Word16, Word16, Word64, Word64)
     result = B.decode . B.reverse $ bs
 
-    fliptup (a, b, c, d, e) = (e, d, c, b, a)
+    mkEvent (a, b, c, d, e) = LinuxEvent e d c b a
 
 
 --------------------------------------------------------------------------------
@@ -154,7 +155,7 @@ lsRead :: (HasLogFunc e) => DeviceFile -> RIO e KeyEvent
 lsRead src = do
   bts <- B.hGet (src^.hdl) (src^.nbytes)
   case (src^.prs $ bts) of
-    Right p -> case fromLinuxKeyEvent p of
+    Right p -> case fromLinuxEvent p of
       Just e  -> return e
       Nothing -> lsRead src
     Left s -> throwIO $ KeyIODecodeError s

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-|
-Module      : KMonad.Keyboard.IO.Linux.UinputSink
+Module      : KMonad.Keyboard.Linux.IO.UinputSink
 Description : Using Linux's uinput interface to emit events
 Copyright   : (c) David Janssen, 2019
 License     : MIT
@@ -8,7 +8,7 @@ Maintainer  : janssen.dhj@gmail.com
 Stability   : experimental
 Portability : portable
 -}
-module KMonad.Keyboard.IO.Linux.UinputSink
+module KMonad.Keyboard.Linux.IO.UinputSink
   ( UinputSink
   , UinputCfg(..)
   , keyboardName
@@ -31,7 +31,9 @@ import System.Posix
 import UnliftIO.Async   (async)
 import UnliftIO.Process (callCommand)
 
-import KMonad.Keyboard.IO.Linux.Types
+import KMonad.Keyboard.IO
+import KMonad.Keyboard.Types
+import KMonad.Keyboard.Linux.Types
 import KMonad.Util
 
 --------------------------------------------------------------------------------
@@ -43,7 +45,7 @@ type SinkId = String
 data UinputSinkError
   = UinputRegistrationError SinkId               -- ^ Could not register device
   | UinputReleaseError      SinkId               -- ^ Could not release device
-  | SinkEncodeError         SinkId LinuxKeyEvent -- ^ Could not decode event
+  | SinkEncodeError         SinkId LinuxEvent -- ^ Could not decode event
   deriving Exception
 
 instance Show UinputSinkError where
@@ -122,13 +124,13 @@ acquire_uinput_keysink (Fd h) c = liftIO $ do
 release_uinput_keysink :: MonadIO m => Fd -> m Int
 release_uinput_keysink (Fd h) = liftIO $ c_release_uinput_keysink h
 
--- | Using a Uinput device, send a LinuxKeyEvent to the Linux kernel
+-- | Using a Uinput device, send a LinuxEvent to the Linux kernel
 send_event :: ()
   => UinputSink
   -> Fd
-  -> LinuxKeyEvent
+  -> LinuxEvent
   -> RIO e ()
-send_event u (Fd h) e@(LinuxKeyEvent (s', ns', typ, c, val)) = do
+send_event u (Fd h) e@(LinuxEvent (s', ns', typ, c, val)) = do
   (liftIO $ c_send_event h typ c val s' ns')
     `onErr` SinkEncodeError (u^.cfg.keyboardName) e
 
@@ -165,5 +167,5 @@ usClose snk = withMVar (snk^.st) $ \h -> finally (release h) (close h)
 usWrite :: HasLogFunc e => UinputSink -> KeyEvent -> RIO e ()
 usWrite u e = withMVar (u^.st) $ \fd -> do
   now <- liftIO $ getSystemTime
-  send_event u fd . toLinuxKeyEvent e $ now
+  send_event u fd . toLinuxEvent e $ now
   send_event u fd . sync              $ now

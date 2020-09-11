@@ -15,7 +15,10 @@ module KMonad.Util
   ( -- * Time units and utils
     -- $time
     Milliseconds
+  , HasTime(..)
   , tDiff
+  , now
+  , systemTime
 
     -- * Random utility helpers that have no better home
   , onErr
@@ -33,31 +36,31 @@ where
 
 import KMonad.Prelude
 
-import Data.Time.Clock
-import Data.Time.Clock.System
 
 --------------------------------------------------------------------------------
 -- $time
---
 
--- | Newtype wrapper around 'Int' to add type safety to our time values
-newtype Milliseconds = Milliseconds Int
+-- | We use 'Milliseconds' as a /diffTime/ in KMonad
+newtype Milliseconds = Milliseconds Integer
   deriving (Eq, Ord, Num, Real, Enum, Integral, Show, Read, Generic, Display)
 
--- | Calculate how much time has elapsed between 2 time points
-tDiff :: ()
-  => SystemTime   -- ^ The earlier timepoint
-  -> SystemTime   -- ^ The later timepoint
-  -> Milliseconds -- ^ The time in milliseconds between the two
-tDiff a b = let
-  a' = systemToUTCTime a
-  b' = systemToUTCTime b
-  d  = diffUTCTime b' a'
-  in round $ d * 1000
--- tDiff (MkSystemTime s_a ns_a) (MkSystemTime s_b ns_b) = let
-  -- s  = fromIntegral $ (s_b  - s_a) * 1000
-  -- ns = fromIntegral $ (ns_b - ns_a) `div` 1000000
-  -- in s + ns
+-- | A class describing how to access some value's 'UTCTime'.
+class HasTime a where
+  time :: Lens' a UTCTime
+
+-- | The time elapsed between objects that have a time value.
+--
+-- If `a` is *newer* than `b` the difference is positive and vice versa.
+tDiff :: (HasTime a, HasTime b) => a -> b -> Milliseconds
+tDiff a b = round . (* 1000) $ (a^.time) `diffUTCTime` (b^.time)
+
+-- | Turn a function that takes a 'UTCTime' into a 'MonadIO' action
+now :: MonadIO m => (UTCTime -> a) -> m a
+now f = f <$> getCurrentTime
+
+-- | An 'Iso' between 'UTCTime' and 'SystemTime'
+systemTime :: Iso' UTCTime SystemTime
+systemTime = iso utcToSystemTime systemToUTCTime
 
 --------------------------------------------------------------------------------
 -- $util

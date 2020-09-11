@@ -72,50 +72,49 @@ library
       KMonad.Args.Types
       KMonad.Button
       KMonad.Keyboard
-      KMonad.Keyboard.ComposeSeq
+      -- KMonad.Keyboard.ComposeSeq
       KMonad.Keyboard.IO
       KMonad.Prelude
       KMonad.Util
 
   if os(linux)
     exposed-modules:
-      KMonad.Keyboard.IO.Linux.DeviceSource
-      KMonad.Keyboard.IO.Linux.Keycode
-      KMonad.Keyboard.IO.Linux.Types
-      KMonad.Keyboard.IO.Linux.UinputSink
+      KMonad.Keyboard.Linux.Types
+      KMonad.Keyboard.Linux.IO.DeviceSource
+      KMonad.Keyboard.Linux.IO.UinputSink
     c-sources:
       c_src/keyio.c
     build-depends:
       unix
 
-  if os(windows)
-    exposed-modules:
-      KMonad.Keyboard.IO.Windows.LowLevelHookSource
-      KMonad.Keyboard.IO.Windows.SendEventSink
-      KMonad.Keyboard.IO.Windows.Types
-    c-sources:
-      c_src/keyio_win.c
-    build-depends:
-      Win32
+  -- if os(windows)
+  --   exposed-modules:
+  --     KMonad.Keyboard.IO.Windows.LowLevelHookSource
+  --     KMonad.Keyboard.IO.Windows.SendEventSink
+  --     KMonad.Keyboard.IO.Windows.Types
+  --   c-sources:
+  --     c_src/keyio_win.c
+  --   build-depends:
+  --     Win32
 
-  if os(darwin)
-    exposed-modules:
-      KMonad.Keyboard.IO.Mac.IOKitSource
-      KMonad.Keyboard.IO.Mac.KextSink
-      KMonad.Keyboard.IO.Mac.Types
-    cxx-sources:
-      c_src/mac/keyio_mac.cpp
-    cxx-options:
-      -std=c++14
-    include-dirs:
-      c_src/mac/Karabiner-VirtualHIDDevice/dist/include
-    extra-libraries:
-      c++
-    build-depends:
-      unix
-    frameworks:
-      CoreFoundation
-      IOKit
+  -- if os(darwin)
+  --   exposed-modules:
+  --     KMonad.Keyboard.IO.Mac.IOKitSource
+  --     KMonad.Keyboard.IO.Mac.KextSink
+  --     KMonad.Keyboard.IO.Mac.Types
+  --   cxx-sources:
+  --     c_src/mac/keyio_mac.cpp
+  --   cxx-options:
+  --     -std=c++14
+  --   include-dirs:
+  --     c_src/mac/Karabiner-VirtualHIDDevice/dist/include
+  --   extra-libraries:
+  --     c++
+  --   build-depends:
+  --     unix
+  --   frameworks:
+  --     CoreFoundation
+  --     IOKit
 
 executable kmonad
   ghc-options:

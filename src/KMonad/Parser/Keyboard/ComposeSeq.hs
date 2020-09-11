@@ -1,5 +1,5 @@
 {-|
-Module      : KMonad.Keyboard.ComposeSeq
+Module      : KMonad.Parser.Keyboard.ComposeSeq
 Description : A list of compose-sequences
 Copyright   : (c) David Janssen, 2019
 License     : MIT
@@ -13,7 +13,7 @@ UTF-8 character that it represents, and the X11 name for this
 sequence/character.
 
 -}
-module KMonad.Keyboard.ComposeSeq
+module KMonad.Parser.Keyboard.ComposeSeq
   ( -- * Sequences
     ssComposed
   )
@@ -729,4 +729,3 @@ ssComposed =
     --, ("^ spc", '^', "asciicircum") -- This overlaps with the normal 'shifted-6' macro for
     -- , ("' j", 'j́', "jacute")
     ]
-

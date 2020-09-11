@@ -23,6 +23,7 @@ aliases =
   , ("pgup", ["pageup"])
   , ("pgdn", ["pagedn", "pagedown"])
   ]
+-- FIXME: CONTINUE HERE
 
 -- -- | A collection of useful aliases to refer to keycode names
 -- aliases :: Q.MultiMap Keycode Text
