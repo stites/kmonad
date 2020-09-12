@@ -80,7 +80,7 @@ vectorP = lexeme $ do
   _ <- lexeme $ char '['
   v <- lexeme $ (many exprP <?> "vector")
   _ <- lexeme $ char ']'
-  pure $ KList v
+  pure $ KVector v
  
 -- | Parse a boolean
 boolP :: Parser KExpr
