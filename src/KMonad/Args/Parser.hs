@@ -25,7 +25,7 @@ import KMonad.Prelude hiding (try, bool)
 
 import KMonad.Args.Types
 import KMonad.Keyboard
-import KMonad.Keyboard.ComposeSeq
+import KMonad.Parser.Keyboard.ComposeSeq
 
 import Data.Char
 import RIO.List (sortBy, find)

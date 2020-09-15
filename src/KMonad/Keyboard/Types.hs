@@ -46,7 +46,9 @@ module KMonad.Keyboard.Types
     -- $keyswitch
   , KeySwitch
   , HasKeySwitch(..)
+  , getKeySwitch
   , pressOf, releaseOf
+  , isPressOf, isReleaseOf
   , matchKeySwitch
  
     -- * KeyEvent
@@ -135,6 +137,13 @@ makeLenses ''KeySwitch
 class HasKeySwitch a where
   keySwitch :: Lens' a KeySwitch
 
+-- | Class describing all the necessary information to function as a 'KeySwitch'
+type CanKeySwitch a = (HasKeycode a, HasSwitch a)
+
+-- | Extract a 'KeySwitch' from something can 'CanKeySwitch'
+getKeySwitch :: CanKeySwitch a => a -> KeySwitch
+getKeySwitch a = KeySwitch (a^.switch) (a^.keycode)
+
 instance HasKeySwitch KeySwitch where keySwitch = id       -- ^ Hook into HasKeySwitch
 instance HasSwitch    KeySwitch where switch    = ksSwitch -- ^ Hook into HasSwitch
 instance HasKeycode   KeySwitch where keycode   = ksCode   -- ^ Hook into HasKeycode
@@ -143,19 +152,26 @@ instance HasKeycode   KeySwitch where keycode   = ksCode   -- ^ Hook into HasKey
 instance Display KeySwitch where
   textDisplay e = tshow (e^.switch) <> " " <> textDisplay (e^.keycode)
 
--- | Create a new 'Press' 'KeyEvent'
+-- | Create a new 'Press' 'KeySwitch'
 pressOf :: Keycode -> KeySwitch
 pressOf = KeySwitch Press
 
--- | Create a new 'Release' 'KeyEvent'
+-- | Create a new 'Release' 'KeySwitch'
 releaseOf :: Keycode -> KeySwitch
 releaseOf = KeySwitch Release
 
 -- | Return whether two values match on both 'Keycode' and 'Switch'
-matchKeySwitch :: (HasKeycode a, HasKeycode b, HasSwitch a, HasSwitch b)
+matchKeySwitch :: (CanKeySwitch a, CanKeySwitch b)
   => a -> b -> Bool
 matchKeySwitch a b = matchCode a b && matchSwitch a b
 
+-- | Return whether a value matches against the press of a provided 'Keycode'
+isPressOf :: CanKeySwitch a => Keycode -> a -> Bool
+isPressOf c = matchKeySwitch (pressOf c)
+
+-- | Return whether a value matches against the release of a provided 'Keycode'
+isReleaseOf :: CanKeySwitch a => Keycode -> a -> Bool
+isReleaseOf c = matchKeySwitch (releaseOf c)
 
 
 --------------------------------------------------------------------------------

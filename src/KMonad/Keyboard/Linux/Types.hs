@@ -130,8 +130,8 @@ instance HasTime LinuxEvent where
 -- | Translate a 'LinuxEvent' to a kmonad 'KeyEvent'
 fromLinuxEvent :: LinuxEvent -> Maybe KeyEvent
 fromLinuxEvent e
-  | e^.leType == 1 && e^.leVal == 0 = Just $ mkRelease c t
-  | e^.leType == 1 && e^.leVal == 1 = Just $ mkPress   c t
+  | e^.leType == 1 && e^.leVal == 0 = Just $ mkKeyEvent Release c t
+  | e^.leType == 1 && e^.leVal == 1 = Just $ mkKeyEvent Press   c t
   | otherwise = Nothing
   where
     c = Keycode . fromIntegral $ e^.leCode
