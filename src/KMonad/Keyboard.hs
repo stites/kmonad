@@ -16,45 +16,39 @@ dealing with key codes, events, and mappings. For keyboard-related IO see
 module KMonad.Keyboard
   ( -- * KeyEvents and their helpers
     -- $event
-    Switch(..)
-  , KeyEvent
-  , switch
-  , keycode
-  , mkKeyEvent
-  , mkPress
-  , mkRelease
+  --   Switch(..)
+  -- , KeyEvent
+  -- , switch
+  -- , keycode
+  -- , mkKeyEvent
+  -- , mkPress
+  -- , mkRelease
 
     -- * Predicates
-  , KeyPred
-  , isPress
-  , isRelease
-  , isKeycode
-  , isPressOf
-  , isReleaseOf
+  -- , KeyPred
+  -- , isPress
+  -- , isRelease
+  -- , isKeycode
+  -- , isPressOf
+  -- , isReleaseOf
 
     -- * LMaps
     -- $lmap
-  , LayerTag
-  , LMap
+  -- , LayerTag
+  -- , LMap
 
     -- * Reexports
-  , Keycode
+  -- , Keycode
+    module X
   )
 
 where
 
 import KMonad.Prelude
 
-import qualified Data.LayerStack as Ls
+import KMonad.Keyboard.Types as X
 
-#ifdef darwin_HOST_OS
-#endif
-
-#ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode (Keycode)
-#endif
-
-
+-- import qualified Data.LayerStack as Ls
 
 
 --------------------------------------------------------------------------------
@@ -65,7 +59,7 @@ import KMonad.Keyboard.Linux.Keycode (Keycode)
 
 -- FIXME: This does not belong here
 -- | Layers are identified by a tag that is simply a 'Text' value.
-type LayerTag = Text
+-- type LayerTag = Text
 
 -- | 'LMap's are mappings from 'LayerTag'd maps from 'Keycode' to things.
-type LMap a = Ls.LayerStack LayerTag Keycode a
+-- type LMap a = Ls.LayerStack LayerTag Keycode a

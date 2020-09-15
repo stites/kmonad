@@ -69,8 +69,9 @@ instance Display LinuxEvent where
 -- | Constructor for linux sync events. Whenever you write an event to linux,
 -- you need to emit a 'sync' to signal to linux that it should sync all queued
 -- updates.
-sync :: SystemTime -> LinuxEvent
-sync (MkSystemTime s ns) = LinuxEvent (fromIntegral s) (fromIntegral ns) 0 0 0
+sync :: UTCTime -> LinuxEvent
+sync t = let (MkSystemTime s ns) = t ^. systemTime
+         in LinuxEvent (fromIntegral s) (fromIntegral ns) 0 0 0
 
 -- | Constructor for arbitrary LinuxEvent's
 -- mkLinuxEvent :: (Integral a, Integral b, Integral c, Integral d, Integral e)

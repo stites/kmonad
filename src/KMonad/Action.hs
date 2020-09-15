@@ -44,7 +44,7 @@ module KMonad.Action
 
     -- * Constituted actions
     -- $combs
-  , my
+  -- , my
   , matchMy
   , after
   , whenDone
@@ -61,6 +61,7 @@ where
 import KMonad.Prelude hiding (timeout)
 
 import KMonad.Keyboard
+import KMonad.Layer
 import KMonad.Util
 
 --------------------------------------------------------------------------------
@@ -134,7 +135,7 @@ data LayerOp
 -- encapsulates all the side-effects required to get everything running.
 class Monad m => MonadKIO m where
   -- | Emit a KeyEvent to the OS
-  emit       :: KeyEvent -> m ()
+  emit       :: Switch -> Keycode -> m ()
   -- | Pause the current thread for n milliseconds
   pause      :: Milliseconds -> m ()
   -- | Pause or unpause event processing
@@ -163,9 +164,9 @@ newtype Action = Action { runAction :: AnyK ()}
 --------------------------------------------------------------------------------
 -- $util
 
--- | Create a KeyEvent matching pressing or releasing of the current button.
-my :: MonadK m => Switch -> m KeyEvent
-my s = mkKeyEvent s <$> myBinding
+-- -- | Create a KeyEvent matching pressing or releasing of the current button.
+-- my :: MonadK m => Switch -> m KeyEvent
+-- my s = mkKeyEvent s <$> myBinding
 
 -- | Register a simple hook without a timeout
 hookF :: MonadKIO m => HookLocation -> (KeyEvent -> m Catch) -> m ()
@@ -200,10 +201,14 @@ whenDone :: MonadK m
   -> m ()
 whenDone = after 0
 
-
--- | Create a KeyPred that matches the Press or Release of the current button.
-matchMy :: MonadK m => Switch -> m KeyPred
-matchMy s = (==) <$> my s
+-- | Create a predicate on anything that 'HasSwitch' and 'HasKeycode' that will
+-- compare against the provided switch and the current binding.
+--
+-- >>> await (matchMy Press) ...
+--
+matchMy :: (HasKeycode a, HasSwitch a, MonadK m) => Switch -> m (a -> Bool)
+matchMy s = pred <$> myBinding
+ where pred c a = a^.keycode == c && a^.switch == s
 
 -- | Wait for an event to match a predicate and then execute an action
 await :: MonadKIO m => KeyPred -> (KeyEvent -> m Catch) -> m ()

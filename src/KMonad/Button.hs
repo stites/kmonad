@@ -53,6 +53,7 @@ import KMonad.Prelude
 
 import KMonad.Action
 import KMonad.Keyboard
+import KMonad.Layer
 import KMonad.Util
 
 
@@ -117,8 +118,8 @@ press b = do
 -- released.
 emitB :: Keycode -> Button
 emitB c = mkButton
-  (emit $ mkPress c)
-  (emit $ mkRelease c)
+  (emit Press c)
+  (emit Release c)
 
 -- | Create a new button that first presses a 'Keycode' before running an inner
 -- button, releasing the 'Keycode' again after the inner 'Button' is released.

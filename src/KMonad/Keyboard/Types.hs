@@ -39,12 +39,21 @@ module KMonad.Keyboard.Types
     -- $switch
   , Switch(..)
   , HasSwitch(..)
+  , matchSwitch
   , isPress, isRelease
 
+    -- * KeySwitch
+    -- $keyswitch
+  , KeySwitch
+  , HasKeySwitch(..)
+  , pressOf, releaseOf
+  , matchKeySwitch
+ 
     -- * KeyEvent
     -- $event
   , KeyEvent
-  , mkKeyEvent, mkPress, mkRelease
+  , KeyPred
+  , mkKeyEvent
   )
 where
 
@@ -67,6 +76,10 @@ import KMonad.Keyboard.Linux.Keycode ( Keycode )
 class HasKeycode a where
   keycode :: Lens' a Keycode
 
+-- | Hooks the class specific definition of 'Keycode' into 'HasKeycode'
+instance HasKeycode Keycode where
+  keycode = id
+
 -- | Return whether the keycodes match between 2 values.
 matchCode :: (HasKeycode a, HasKeycode b) => a -> b -> Bool
 matchCode a b = a^.keycode == b^.keycode
@@ -87,13 +100,19 @@ data Switch
 class HasSwitch a where
   switch :: Lens' a Switch
 
+-- | Hooks the base 'Switch' type into 'HasSwitch'
 instance HasSwitch Switch where switch = id
 
 -- | How to pretty-print a 'Switch'
 instance Display Switch where
   textDisplay = tshow
 
+-- | Return whether two values match on their 'switch' value
+matchSwitch :: (HasSwitch a, HasSwitch b) => a -> b -> Bool
+matchSwitch a b = a^.switch == b^.switch
+
 -- | Return whether a value contained a 'Press'
+-- isPress :: HasSwitch a => a -> Bool
 isPress :: HasSwitch a => a -> Bool
 isPress = (Press ==) . view switch
 
@@ -102,34 +121,69 @@ isRelease :: HasSwitch a => a -> Bool
 isRelease = (Release ==) . view switch
 
 --------------------------------------------------------------------------------
--- $event
+-- $keyswitch
 --
--- A 'KeyEvent' is a detected state-change for some key, identified by its
--- 'Keycode'. Additionally, we store the time when this change was detected.
+-- A 'KeySwitch' is a detected state-change for some key, identified by its
+-- 'Keycode'.
 
+data KeySwitch = KeySwitch
+  { _ksSwitch :: !Switch  -- ^ wether a 'press' or 'release' occurred
+  , _ksCode   :: !Keycode -- ^ the identity of the key which registered the event
+  } deriving (Eq, Show)
+makeLenses ''KeySwitch
+
+class HasKeySwitch a where
+  keySwitch :: Lens' a KeySwitch
+
+instance HasKeySwitch KeySwitch where keySwitch = id       -- ^ Hook into HasKeySwitch
+instance HasSwitch    KeySwitch where switch    = ksSwitch -- ^ Hook into HasSwitch
+instance HasKeycode   KeySwitch where keycode   = ksCode   -- ^ Hook into HasKeycode
+
+-- | How to pretty-print a 'KeySwitch'
+instance Display KeySwitch where
+  textDisplay e = tshow (e^.switch) <> " " <> textDisplay (e^.keycode)
+
+-- | Create a new 'Press' 'KeyEvent'
+pressOf :: Keycode -> KeySwitch
+pressOf = KeySwitch Press
+
+-- | Create a new 'Release' 'KeyEvent'
+releaseOf :: Keycode -> KeySwitch
+releaseOf = KeySwitch Release
+
+-- | Return whether two values match on both 'Keycode' and 'Switch'
+matchKeySwitch :: (HasKeycode a, HasKeycode b, HasSwitch a, HasSwitch b)
+  => a -> b -> Bool
+matchKeySwitch a b = matchCode a b && matchSwitch a b
+
+
+
+--------------------------------------------------------------------------------
+-- $keyevent
+--
+-- A 'KeyEvent' is a 'KeySwitch' at some point in time.
+
+-- | A 'KeyEvent' indicates the changing of a switch registered to a particular
+-- 'Keycode' as some 'UTCTime'.
 data KeyEvent = KeyEvent
-  { _keSwitch :: !Switch  -- ^ Wether a 'Press' or 'Release' occurred
-  , _keCode   :: !Keycode -- ^ The identity of the key which registered the event
-  , _keTime   :: !UTCTime -- ^ When the event occured
+  { _keKeySwitch :: !KeySwitch  -- ^ Details of the state-change
+  , _keTime      :: !UTCTime    -- ^ When the event occured
   }
 makeLenses ''KeyEvent
 
-instance HasSwitch  KeyEvent where switch  = keSwitch
-instance HasKeycode KeyEvent where keycode = keCode
-instance HasTime    KeyEvent where time    = keTime
+instance HasKeySwitch KeyEvent where keySwitch = keKeySwitch
+instance HasSwitch    KeyEvent where switch    = keySwitch.switch
+instance HasKeycode   KeyEvent where keycode   = keySwitch.keycode
+instance HasTime      KeyEvent where time      = keTime
 
 -- | How to pretty-print a 'KeyEvent'
 instance Display KeyEvent where
-  textDisplay e = tshow (e^.switch) <> " " <> textDisplay (e^.keycode)
+  textDisplay = textDisplay . view keySwitch
+
+-- | We use on predicates on 'KeyEvent' enough to warrant a type-alias
+type KeyPred = KeyEvent -> Bool
 
 -- | Create a new 'KeyEvent'
 mkKeyEvent :: Switch -> Keycode -> UTCTime -> KeyEvent
-mkKeyEvent = KeyEvent
+mkKeyEvent s c = KeyEvent (KeySwitch s c)
 
--- | Create a new 'Press' 'KeyEvent'
-mkPress :: Keycode -> UTCTime -> KeyEvent
-mkPress = mkKeyEvent Press
-
--- | Create a new 'Release' 'KeyEvent'
-mkRelease :: Keycode -> UTCTime -> KeyEvent
-mkRelease = mkKeyEvent Release

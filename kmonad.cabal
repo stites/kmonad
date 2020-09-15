@@ -28,6 +28,7 @@ library
   build-depends:
       base
     , cereal
+    , contravariant
     , lens
     , megaparsec
     , mtl
@@ -71,14 +72,16 @@ library
       KMonad.Args.Joiner
       KMonad.Args.Types
       KMonad.Button
+      KMonad.Layer
       KMonad.Keyboard
-      -- KMonad.Keyboard.ComposeSeq
       KMonad.Keyboard.IO
+      KMonad.Keyboard.Types
       KMonad.Prelude
       KMonad.Util
 
   if os(linux)
     exposed-modules:
+      KMonad.Keyboard.Linux.Keycode
       KMonad.Keyboard.Linux.Types
       KMonad.Keyboard.Linux.IO.DeviceSource
       KMonad.Keyboard.Linux.IO.UinputSink

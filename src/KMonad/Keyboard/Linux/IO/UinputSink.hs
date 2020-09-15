@@ -130,8 +130,10 @@ send_event :: ()
   -> Fd
   -> LinuxEvent
   -> RIO e ()
-send_event u (Fd h) e@(LinuxEvent (s', ns', typ, c, val)) = do
-  (liftIO $ c_send_event h typ c val s' ns')
+send_event u (Fd h) e = do
+  (liftIO $ c_send_event h
+   (fromIntegral $ e^.leType) (fromIntegral $ e^.leCode)
+   (fromIntegral $ e^.leVal) (fromIntegral $ e^.leS) (fromIntegral $ e^.leNS))
     `onErr` SinkEncodeError (u^.cfg.keyboardName) e
 
 
@@ -166,6 +168,9 @@ usClose snk = withMVar (snk^.st) $ \h -> finally (release h) (close h)
 -- ensures that we can never have 2 threads try to write at the same time.
 usWrite :: HasLogFunc e => UinputSink -> KeyEvent -> RIO e ()
 usWrite u e = withMVar (u^.st) $ \fd -> do
-  now <- liftIO $ getSystemTime
-  send_event u fd . toLinuxEvent e $ now
-  send_event u fd . sync              $ now
+  -- now <- liftIO $ getSystemTime
+
+  send_event u fd $ _LinuxEvent # e
+  send_event u fd =<< now sync
+  -- send_event u fd . toLinuxEvent e $ now
+  -- send_event u fd . sync              $ now
