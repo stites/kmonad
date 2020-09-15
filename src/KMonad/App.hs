@@ -25,6 +25,7 @@ import KMonad.Action
 import KMonad.Button
 import KMonad.Keyboard
 import KMonad.Keyboard.IO
+import KMonad.Layer
 import KMonad.Util
 import KMonad.App.BEnv
 
@@ -154,9 +155,9 @@ pressKey c =
       ft <- view fallThrough
       if ft
         then do
-          emit $ mkPress c
+          emit Press c
           await (isReleaseOf c) $ \_ -> do
-            emit $ mkRelease c
+            emit Release c
             pure Catch
         else pure ()
 
@@ -187,10 +188,12 @@ startApp :: HasLogFunc e => AppCfg -> RIO e ()
 startApp c = runContT (initAppEnv c) (flip runRIO loop)
 
 instance (HasAppEnv e, HasAppCfg e, HasLogFunc e) => MonadKIO (RIO e) where
-  -- Emitting with the keysink
-  emit e = view outVar >>= atomically . flip putTMVar e
-  -- emit e = view keySink >>= flip emitKey e
-
+  -- Emitting with the 'outVar'
+  emit s c = do
+    var <- view outVar
+    t   <- getCurrentTime
+    atomically . putTMVar var $ mkKeyEvent s c t
+   
   -- Pausing is a simple IO action
   pause = threadDelay . (*1000) . fromIntegral
 

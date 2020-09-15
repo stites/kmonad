@@ -76,6 +76,7 @@ library
       KMonad.Keyboard
       KMonad.Keyboard.IO
       KMonad.Keyboard.Types
+      KMonad.Parser.Keyboard.ComposeSeq
       KMonad.Prelude
       KMonad.Util
 

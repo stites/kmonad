@@ -48,6 +48,9 @@ newtype Milliseconds = Milliseconds Integer
 class HasTime a where
   time :: Lens' a UTCTime
 
+-- | 'UTCTime' is a member of 'HasTime'
+instance HasTime UTCTime where time = id
+
 -- | The time elapsed between objects that have a time value.
 --
 -- If `a` is *newer* than `b` the difference is positive and vice versa.

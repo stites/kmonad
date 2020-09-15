@@ -53,12 +53,13 @@ import qualified RIO.HashMap as M
 -- $env
 
 data Entry = Entry
-  { _time  :: SystemTime
+  { _eTime :: UTCTime
   , _eHook :: Hook IO
   }
 makeLenses ''Entry
 
 instance HasHook Entry IO where hook = eHook
+instance HasTime Entry    where time = eTime
 
 type Store = M.HashMap Unique Entry
 
@@ -107,7 +108,7 @@ register :: (HasLogFunc e)
 register hs h = do
   -- Insert an entry into the store
   tag <- liftIO newUnique
-  e   <- Entry <$> liftIO getSystemTime <*> ioHook h
+  e   <- Entry <$> liftIO getCurrentTime <*> ioHook h
   atomically $ modifyTVar (hs^.hooks) (M.insert tag e)
   -- If the hook has a timeout, start a thread that will signal timeout
   case h^.hTimeout of
@@ -144,7 +145,7 @@ cancelHook hs tag = do
 -- how this updates the 'Hooks' environment.
 
 -- | Run the function stored in a Hook on the event and the elapsed time
-runEntry :: MonadIO m => SystemTime -> KeyEvent -> Entry -> m Catch
+runEntry :: MonadIO m => UTCTime -> KeyEvent -> Entry -> m Catch
 runEntry t e v = liftIO $ do
   (v^.keyH) $ Trigger ((v^.time) `tDiff` t) e
 
@@ -155,9 +156,9 @@ runHooks :: (HasLogFunc e)
   -> RIO e (Maybe KeyEvent)
 runHooks hs e = do
   logDebug "Running hooks"
-  m   <- atomically $ swapTVar (hs^.hooks) M.empty
-  now <- liftIO getSystemTime
-  foldMapM (runEntry now e) (M.elems m) >>= \case
+  m <- atomically $ swapTVar (hs^.hooks) M.empty
+  t <- getCurrentTime
+  foldMapM (runEntry t e) (M.elems m) >>= \case
     Catch   -> pure $ Nothing
     NoCatch -> pure $ Just e
 
