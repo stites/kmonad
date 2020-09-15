@@ -1,5 +1,5 @@
 {-|
-Module      : KMonad.Args.Parser
+Module      : KMonad.Parser
 Description : How to turn a text-file into config-tokens
 Copyright   : (c) David Janssen, 2019
 License     : MIT
