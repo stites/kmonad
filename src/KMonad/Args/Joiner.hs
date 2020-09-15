@@ -32,10 +32,11 @@ import KMonad.Action
 import KMonad.Button
 import KMonad.Keyboard
 import KMonad.Keyboard.IO
+import KMonad.Layer
 
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.IO.Linux.DeviceSource
-import KMonad.Keyboard.IO.Linux.UinputSink
+import KMonad.Keyboard.Linux.IO.DeviceSource
+import KMonad.Keyboard.Linux.IO.UinputSink
 #endif
 
 #ifdef mingw32_HOST_OS
@@ -104,7 +105,7 @@ makeLenses ''JCfg
 
 defJCfg :: [KExpr] ->JCfg
 defJCfg = JCfg
-  (emitB KeyRightAlt)
+  (emitB $ kc "ralt")
 
 -- | Monad in which we join, just Except over Reader
 newtype J a = J { unJ :: ExceptT JoinError (Reader JCfg) a }
