@@ -69,9 +69,12 @@ import qualified RIO.Text    as T
 import KMonad.Util
 
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode ( Keycode, keycodeNames)
+import KMonad.Keyboard.Linux.Keycode (Keycode, keycodeNames)
 #endif
 
+#ifdef mingw32_HOST_OS
+import KMonad.Keyboard.Windows.Keycode (Keycode, keycodeNames)
+#endif
 --------------------------------------------------------------------------------
 -- $code
 --

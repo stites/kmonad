@@ -91,15 +91,16 @@ library
     build-depends:
       unix
 
-  -- if os(windows)
-  --   exposed-modules:
-  --     KMonad.Keyboard.IO.Windows.LowLevelHookSource
-  --     KMonad.Keyboard.IO.Windows.SendEventSink
-  --     KMonad.Keyboard.IO.Windows.Types
-  --   c-sources:
-  --     c_src/keyio_win.c
-  --   build-depends:
-  --     Win32
+  if os(windows)
+    exposed-modules:
+      KMonad.Keyboard.Windows.Keycode
+      KMonad.Keyboard.Windows.Types
+      KMonad.Keyboard.Windows.IO.LowLevelHookSource
+      KMonad.Keyboard.Windows.IO.SendEventSink
+    c-sources:
+      c_src/keyio_win.c
+    build-depends:
+      Win32
 
   -- if os(darwin)
   --   exposed-modules:
