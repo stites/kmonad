@@ -34,8 +34,8 @@ module KMonad.Keyboard.Types
     Keycode
   , HasKeycode(..)
   , matchCode
-  , lookupKeycode, lookupKeyname
   , kc
+  , keynames
 
     -- * Switch
     -- $switch
@@ -63,13 +63,12 @@ where
 
 import KMonad.Prelude
 
-import qualified RIO.HashMap as M
 import qualified RIO.Text    as T
 
 import KMonad.Util
 
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode (Keycode, keycodeNames)
+import KMonad.Keyboard.Linux.Keycode (Keycode, _Keyname, keynames)
 #endif
 
 #ifdef mingw32_HOST_OS
@@ -94,20 +93,15 @@ instance HasKeycode Keycode where
 matchCode :: (HasKeycode a, HasKeycode b) => a -> b -> Bool
 matchCode a b = a^.keycode == b^.keycode
 
--- | Lookup a keycode by its name, check "KMonad.Keyboard.Linux.Keycode" for
--- standard names used throughout this codebase.
-lookupKeycode :: Text -> Maybe Keycode
-lookupKeycode t = M.lookup t . M.fromList . map (view swapped) $ keycodeNames
-
--- | Lookup a keyname by its code.
-lookupKeyname :: Keycode -> Maybe Text
-lookupKeyname c = M.lookup c . M.fromList $ keycodeNames
-
 -- | Lookup a 'Keycode' by its name and throw an error if it does not exist.
+--
+-- NOTE: This is mainly for internal use, so you can reference the 'Keycode'
+-- for, e.g., the letter `a` through `kc a` in an OS-independent manner
 kc :: Text -> Keycode
-kc c = case lookupKeycode c of
+kc c = case c ^? _Keyname of
   Nothing -> error $ "Lookup failed during parsing: " <> T.unpack c
   Just a  -> a
+ 
 --------------------------------------------------------------------------------
 -- $switch
 --

@@ -16,10 +16,21 @@ isolation.
 -}
 module KMonad.Keyboard.Linux.Keycode
   ( Keycode(..)
-  , keycodeNames )
+  , _Keyname
+  , keynames
+
+  , aliasToName
+  )
+
 where
 
 import KMonad.Prelude
+
+import KMonad.Keyboard.Keycode
+import KMonad.Util (manyToOne, _keys)
+
+import qualified RIO.HashMap as M
+import qualified RIO.HashSet as S
 
 --------------------------------------------------------------------------------
 -- $code
@@ -28,17 +39,58 @@ import KMonad.Prelude
 -- which is already the Linux-native representation of keycodes, saving us from
 -- having to do any casting.
 
+
 -- | The 'Keycode' type for linux
 newtype Keycode = Keycode Word16
-  deriving (Eq, Ord, Enum, Num, Real, Integral, Generic, Hashable, Show, Display)
+  deriving (Eq, Ord, Enum, Num, Real, Integral, Generic, Hashable, Show)
+
+-- | Display any named Keycode by its name, and anything else by its number
+instance Display Keycode where
+  textDisplay k@(Keycode i) = "Keycode " <> case M.lookup k codeToName of
+    Just t  -> t
+    Nothing -> "<unnamed: " <> textDisplay i <> ">"
 
 --------------------------------------------------------------------------------
 -- $names
 --
--- All the names we use to refer to Keycodes.
+-- All the names we use to refer to 'Keycode's.
 
-keycodeNames :: [(Keycode, Text)]
-keycodeNames =
+-- | The Prism encoding the naming relationship for Linux 'Keycode's
+_Keyname :: Prism' Keyname Keycode
+_Keyname = prism' textDisplay lookupCode
+  where
+    lookupCode t = case M.lookup t aliasToName of
+      Just a  -> M.lookup a nameToCode
+      Nothing -> M.lookup t nameToCode
+
+-- | The set of all valid 'Keyname's
+keynames :: S.HashSet Keyname
+keynames = S.fromList $ aliasToName^.._keys
+                     <> nameToCode^.._keys
+
+-- | A map of names to codes
+nameToCode :: M.HashMap Keyname Keycode
+nameToCode = M.fromList $ linKeyNames ^.. folded . swapped
+
+-- | A map of codes to names
+codeToName :: M.HashMap Keycode Keyname
+codeToName = M.fromList linKeyNames
+
+-- | A map of aliases to their core names
+aliasToName :: M.HashMap Keyname Keyname
+aliasToName = M.fromList $ (aliases, linKeyAlias)
+  ^.. both      -- For both tuple elements
+    . folded    -- Over the elements of the list
+    . manyToOne -- Reversing the (a, [b]) to [(b, a)]
+
+--------------------------------------------------------------------------------
+-- $raw
+--
+-- The raw-data representations of the Keyname, Keycode relationship.
+
+-- | Raw data list of all 'Keycode' 'Keyname' correspondences
+linKeyNames :: [(Keycode, Keyname)]
+linKeyNames =
   zip [1..83]
     [ "esc", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" , "-" , "="
     , "bspc", "tab", "q", "w", "e", "r", "t", "y", "u" , "i", "o" , "p", "["
@@ -71,3 +123,12 @@ keycodeNames =
     , "svid", "kbtg", "kbdn", "kbup", "ksnd", "repl", "fwml", "save", "docs"
     , "batt", "blue", "wlan", "uwb", "unkn", "vdnx", "vdpv", "brcc", "brau"
     , "doff", "wwan", "wmax", "rfkl", "mcmu" ]
+
+-- | Raw data list of various 'Keyname' correspondences for specifically linuxy
+-- key-names.
+linKeyAlias :: [Alias]
+linKeyAlias =
+  [ ("hira", ["hiranaga", "hirnag"])
+  , ("kata", ["katakana", "katkan"])
+  , ("cmps", ["cmp"])
+  ]

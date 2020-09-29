@@ -74,6 +74,7 @@ library
       KMonad.Button
       KMonad.Layer
       KMonad.Keyboard
+      KMonad.Keyboard.Keycode
       KMonad.Keyboard.IO
       KMonad.Keyboard.Types
       KMonad.Parser.Keyboard.ComposeSeq

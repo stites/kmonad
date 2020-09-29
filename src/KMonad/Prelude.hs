@@ -11,7 +11,8 @@ Portability : non-portable (MPTC with FD, FFI to Linux-only c-code)
 -}
 
 module KMonad.Prelude
-  ( module X )
+  ( module X
+  )
 where
 
 import Control.Lens                as X
@@ -38,3 +39,4 @@ import RIO as X hiding
     -- Will import these when I need it
   , some, many
   )
+

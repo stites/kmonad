@@ -24,8 +24,11 @@ module KMonad.Util
   , onErr
   , using
   , logRethrow
+  , manyToOne
+  , _keys
 
     -- * Some helpers to launch background process
+    -- $launch
   , withLaunch
   , withLaunch_
   , launch
@@ -36,6 +39,7 @@ where
 
 import KMonad.Prelude
 
+import qualified RIO.HashMap as M
 
 --------------------------------------------------------------------------------
 -- $time
@@ -80,6 +84,21 @@ onErr a err = a >>= \ret -> when (ret == -1) $ throwIO err
 using :: Acquire a -> ContT r (RIO e) a
 using dat = ContT $ (\next -> with dat $ \a -> next a)
 
+-- | Turn a (x, [a, b, c]) tuple into an [(a, x), (b, x), (c, x)] foldable
+--
+-- This is used primarily to work with alias-lists of the form:
+-- >>> [ ("foo", ["f", "f00", "foo!1"])
+-- >>> , ("bar", ["b4r", "baarrgghh"]) ]
+--
+-- NOTE: In the above example, the list must be viewed like
+-- >>> xs ^.. folded . manyToOne
+--
+manyToOne :: Foldable f => Fold (a, f b) (b, a)
+manyToOne = folding $ \(a, bs) -> map (,a) (toList bs)
+
+-- | A lensy fold over 'HashMap's keys
+_keys :: Fold (M.HashMap k v) k
+_keys = folding $ M.keys
 
 -- | Log an error message and then rethrow the error
 --
@@ -93,6 +112,12 @@ logRethrow :: HasLogFunc e
 logRethrow t e = do
   logError $ display t <> ": " <> display e
   throwIO e
+
+--------------------------------------------------------------------------------
+-- $launch
+--
+-- We have a few utility functions that launch monadic actions as async
+-- processes and automatically perform logging and error-handling.
 
 -- | Launch a process that repeats an action indefinitely. If an error ever
 -- occurs, print it and rethrow it. Ensure the process is cleaned up upon error

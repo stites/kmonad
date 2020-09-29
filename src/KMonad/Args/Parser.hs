@@ -29,11 +29,9 @@ import KMonad.Parser.Keyboard.ComposeSeq
 
 import Data.Char
 import RIO.List (sortBy, find)
-import RIO.Partial (fromJust)
 
 
 -- import qualified Data.MultiMap as Q
-import qualified RIO.HashMap as M
 import qualified RIO.Text as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -125,13 +123,14 @@ bool = symbol "true" *> pure True
 -- Parsers for elements that are not stand-alone KExpr's
 
 -- | FIXME this needs to be constructed
-keyNames :: M.HashMap Text Keycode
-keyNames = undefined
+-- keyNames :: M.HashMap Text Keycode
+-- keyNames = undefined
 
 -- | Parse a keycode
 keycodeP :: Parser Keycode
-keycodeP = fromNamed (M.toList keyNames) <?> "keycode"
-
+keycodeP = fromNamed ns <?> "keycode"
+  where ns = map (\t -> (t, kc t)) $ toList keynames
+ 
 -- | Parse an integer
 numP :: Parser Int
 numP = L.decimal
