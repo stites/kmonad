@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE DeriveAnyClass, CPP #-}
 {-|
 Module      : KMonad.Keyboard.Types
@@ -31,7 +32,7 @@ similarly changed.
 module KMonad.Keyboard.Types
   ( -- * Keycode
     -- $code
-    Keycode(..)
+    Keycode
   , HasKeycode(..)
   , matchCode
   , kc
@@ -63,17 +64,22 @@ where
 
 import KMonad.Prelude
 
-import qualified RIO.Text    as T
-
+import KMonad.Keyboard.Keycode
 import KMonad.Util
 
+import qualified RIO.HashMap as M
+import qualified RIO.HashSet as S
+import qualified RIO.Text    as T
+
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode (Keycode(..), _Keyname, keynames)
+import KMonad.Keyboard.Linux.Keycode (Keycode, osKeynames, osAliases)
 #endif
 
 #ifdef mingw32_HOST_OS
-import KMonad.Keyboard.Windows.Keycode (Keycode, keycodeNames)
+import KMonad.Keyboard.Windows.Keycode (Keycode, osKeynames, osAliases)
 #endif
+
+
 --------------------------------------------------------------------------------
 -- $code
 --
@@ -101,7 +107,47 @@ kc :: Text -> Keycode
 kc c = case c ^? _Keyname of
   Nothing -> error $ "Lookup failed during parsing: " <> T.unpack c
   Just a  -> a
- 
+
+
+--------------------------------------------------------------------------------
+-- $names
+--
+-- All the names we use to refer to 'Keycode's.
+
+-- | A map of raw, unaliased names to codes
+nameToCode :: M.HashMap Keyname Keycode
+nameToCode = M.fromList $ osKeynames ^.. folded . swapped
+
+-- | A map of keycodes to their core name (no aliases)
+codeToName :: M.HashMap Keycode Keyname
+codeToName = M.fromList osKeynames
+
+-- | A map of aliases to their core names
+aliasToName :: M.HashMap Keyname Keyname
+aliasToName = M.fromList $ (aliases, osAliases)
+  ^.. both      -- For both tuple elements
+    . folded    -- Over the elements of the list
+    . manyToOne -- Reversing the (a, [b]) to [(b, a)]
+
+-- | The Prism encoding the naming relationship for Linux 'Keycode's
+_Keyname :: Prism' Keyname Keycode
+_Keyname = prism' textDisplay lookupCode
+  where
+    lookupCode t = case M.lookup t aliasToName of
+      Just a  -> M.lookup a nameToCode
+      Nothing -> M.lookup t nameToCode
+
+-- | Display any named Keycode by its name, and anything else by a decorated
+--   version of its raw representation.
+instance Display Keycode where
+  textDisplay k = "Keycode " <> case M.lookup k codeToName of
+    Just t  -> t
+    Nothing -> "<unnamed: " <> rawPrint k <> ">"
+   
+-- | The set of all valid 'Keyname's
+keynames :: S.HashSet Keyname
+keynames = S.fromList $ aliasToName^.._keys <> nameToCode^.._keys
+
 --------------------------------------------------------------------------------
 -- $switch
 --
@@ -144,6 +190,7 @@ isRelease = (Release ==) . view switch
 -- A 'KeySwitch' is a detected state-change for some key, identified by its
 -- 'Keycode'.
 
+-- | The 'KeySwitch' record, containing a 'Switch' and an identifying 'Keycode'
 data KeySwitch = KeySwitch
   { _ksSwitch :: !Switch  -- ^ wether a 'press' or 'release' occurred
   , _ksCode   :: !Keycode -- ^ the identity of the key which registered the event

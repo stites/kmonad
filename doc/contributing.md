@@ -20,6 +20,9 @@ them, please note this in the pull-request.
 - If you import only 1 function from a module, or 2-3 from a really large
   module, 'document' this by importing only that function. Once you exceed 3
   functions or so, it is probably clearer to just import the entire module.
+- Make sure the code compiles without warnings. If a particular warning is
+  inevitable (orphan-instances, for example, in "KMonad.Keyboard.Types")
+  explicitly silence it at the top of the module.
 ## Documentation
 This is very important.
 - Documentation is very important. 'KMonad' is partly a keyboard remapper, but
@@ -52,6 +55,14 @@ All of the points here are not that important.
 - If you intend to start anything larger than a small improvement, let us know
   in Issues. We might be able to help, but more importantly it will prevent
   duplication of efforts.
+### Branches
+- Please submit any purely documentation updates directly to `master` (nothing
+  that would require a recompile).
+- Please submit small fixes or improvements to `develop`
+- There are feature branches for larger multi-day projects. If you are working
+  on it alone, it's probably easiest to work on a personal fork. If you want to
+  collaborate with other users, feel free to contact me and I can create
+  branches on my `kmonad`, or you can collaborate on your own fork.
 ## KMonad-architecture specific
 - Buttons should exist in a vacuum, if at any point you try to get 1 button to
   check what another button is doing, you are doing something wrong. Perhaps

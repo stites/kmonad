@@ -29,14 +29,7 @@ where
 
 import KMonad.Prelude
 
--- import Data.Serialize
--- import Data.Time.Clock.System
--- import Foreign.C.Types (CInt)
--- import RIO.Partial (toEnum)
-
 import KMonad.Keyboard.Types
-import KMonad.Keyboard.Linux.Keycode
-
 import KMonad.Util
 
 --------------------------------------------------------------------------------
@@ -134,7 +127,7 @@ fromLinuxEvent e
   | e^.leType == 1 && e^.leVal == 1 = Just $ mkKeyEvent Press   c t
   | otherwise = Nothing
   where
-    c = Keycode . fromIntegral $ e^.leCode
+    c = fromIntegral $ e^.leCode
     t = (e^.leS, e^.leNS) ^. from linuxTime
 
 -- | Translate kmonad 'KeyEvent' to 'LinuxEvent'
