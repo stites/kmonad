@@ -14,14 +14,15 @@
 
 
 (defsrc
-  tab  q    w    e    r    t
+  tab  q    w    e    r    t   &83 ;; &83 is numpad-period
   caps a    s    d    f    g
   sft  z    x    c    v    b
   )
 
-
+;; NOTE: &17 actually points at 'w', so when kmonad runs, q -> w
 (deflayer main
-  tab  q    w    e    r    t
+  ;;tab  q    w    e    r    t
+  tab  &17    w    e    r    t #(: rprn )
   caps a    r    s    t    d
   @foo z    x    c    v    b
   )

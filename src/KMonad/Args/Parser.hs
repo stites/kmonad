@@ -128,7 +128,10 @@ bool = symbol "true" *> pure True
 
 -- | Parse a keycode
 keycodeP :: Parser Keycode
-keycodeP = fromNamed ns <?> "keycode"
+keycodeP =  choice
+    [ prefix (char '&') *> ((Keycode . fromIntegral) <$> numP)
+    , fromNamed ns
+    ] <?> "keycode"
   where ns = map (\t -> (t, kc t)) $ toList keynames
  
 -- | Parse an integer

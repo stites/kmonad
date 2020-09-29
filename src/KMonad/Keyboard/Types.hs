@@ -31,7 +31,7 @@ similarly changed.
 module KMonad.Keyboard.Types
   ( -- * Keycode
     -- $code
-    Keycode
+    Keycode(..)
   , HasKeycode(..)
   , matchCode
   , kc
@@ -68,7 +68,7 @@ import qualified RIO.Text    as T
 import KMonad.Util
 
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode (Keycode, _Keyname, keynames)
+import KMonad.Keyboard.Linux.Keycode (Keycode(..), _Keyname, keynames)
 #endif
 
 #ifdef mingw32_HOST_OS
