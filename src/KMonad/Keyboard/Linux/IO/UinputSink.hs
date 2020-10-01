@@ -11,19 +11,13 @@ Portability : portable
 module KMonad.Keyboard.Linux.IO.UinputSink
   ( UinputSink
   , UinputCfg(..)
-  , keyboardName
-  , vendorCode
-  , productCode
-  , productVersion
-  , postInit
+  , HasUinputCfg(..)
   , uinputSink
   , defUinputCfg
   )
 where
 
 import KMonad.Prelude
-
-import Data.Time.Clock.System (getSystemTime)
 
 import Foreign.C.String
 import Foreign.C.Types
@@ -164,13 +158,8 @@ usClose snk = withMVar (snk^.st) $ \h -> finally (release h) (close h)
       logInfo $ "Closing Uinput device file"
       liftIO $ closeFd h
 
--- | Write a keyboard event to the sink and sync the driver state. Using an MVar
--- ensures that we can never have 2 threads try to write at the same time.
+-- | Write a keyboard event to the sink and sync the driver state.
 usWrite :: HasLogFunc e => UinputSink -> KeyEvent -> RIO e ()
 usWrite u e = withMVar (u^.st) $ \fd -> do
-  -- now <- liftIO $ getSystemTime
-
   send_event u fd $ _LinuxEvent # e
   send_event u fd =<< now sync
-  -- send_event u fd . toLinuxEvent e $ now
-  -- send_event u fd . sync              $ now

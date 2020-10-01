@@ -1,11 +1,15 @@
 module KMonad.Keyboard.Windows.Keycode
   ( Keycode
+  , _RawName
   , osKeynames
   , osAliases
   )
 where
 
 import KMonad.Prelude
+
+
+import RIO.Text (unpack)
 
 import KMonad.Keyboard.Keycode
 
@@ -20,9 +24,11 @@ import KMonad.Keyboard.Keycode
 newtype Keycode = Keycode Word32
   deriving (Eq, Ord, Enum, Num, Real, Integral, Generic, Hashable, Show)
 
--- | The raw display of a 'Keycode' is just its number
-instance RawPrint Keycode where
-  rawPrint (Keycode n) = textDisplay n
+-- | How to parse and display raw 'Keycode' values from 'Text'
+_RawName :: Prism' Text Keycode
+_RawName = prism' kc2txt txt2kc
+  where kc2txt (Keycode c) = textDisplay c
+        txt2kc t           = Keycode <$> (readMaybe . unpack) t
 
 -- | Raw data list of all 'Keycode' 'Keyname' correspondences
 osKeynames :: [(Keycode, Keyname)]

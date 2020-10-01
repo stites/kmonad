@@ -16,7 +16,6 @@ we'd get a circular import because:
 
 module KMonad.Keyboard.Keycode
   ( Keyname
-  , RawPrint(..)
   , Alias
   , aliases
   )
@@ -35,12 +34,6 @@ type Keyname = Text
 --
 -- FIXME : We do not check for nor make guarantees about duplicate names.
 type Alias = (Keyname, [Keyname])
-
--- | Class that any implementation of 'Keycode' must implement. It provides the
--- representation of a 'Keycode' when it *cannot* be found in the collection of
--- 'Keyname's for that OS.
-class RawPrint a where
-  rawPrint :: a -> Text
 
 -- | A name-to-name mapping defining 'Keycode' aliases.
 aliases :: [Alias]

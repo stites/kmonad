@@ -129,10 +129,22 @@ bool = symbol "true" *> pure True
 -- | Parse a keycode
 keycodeP :: Parser Keycode
 keycodeP =  choice
-    [ prefix (char '&') *> (fromIntegral <$> numP)
-    , fromNamed ns
+    [ raw
+    , named
     ] <?> "keycode"
-  where ns = map (\t -> (t, kc t)) $ toList keynames
+  where
+    raw = prefix (char '&') >> word >>= \w ->  case w ^? _RawName of
+      Just c  -> pure c
+      Nothing -> empty
+    -- raw   = do
+    --   _ <- prefix (char '&')
+    --   n <- word
+    --   case n ^? _RawName of
+    --     Just c  -> pure c
+    --     Nothing -> empty
+
+    named = fromNamed $ map (\t -> (t, kc t)) $ toList keynames
+
  
 -- | Parse an integer
 numP :: Parser Int

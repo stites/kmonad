@@ -22,6 +22,7 @@ import Foreign.Storable
 import KMonad.Keyboard
 import KMonad.Keyboard.IO
 import KMonad.Keyboard.Windows.Types
+import KMonad.Util (now)
 
 --------------------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ foreign import ccall "release_kb"
 -- | Pass a pointer to a buffer to wait_key, when it returns the buffer can be
 -- read for the next key event.
 foreign import ccall "wait_key"
-  wait_key :: Ptr WinKeyEvent -> IO ()
+  wait_key :: Ptr WindowsEvent -> IO ()
 
 
 --------------------------------------------------------------------------------
@@ -44,7 +45,7 @@ foreign import ccall "wait_key"
 -- | Data used to track `connection` to windows process
 data LLHook = LLHook
   { _thread :: !(Async Word8)        -- ^ The thread-id of the listen-process
-  , _buffer :: !(Ptr WinKeyEvent) -- ^ Buffer used to communicate with process
+  , _buffer :: !(Ptr WindowsEvent) -- ^ Buffer used to communicate with process
   }
 makeLenses ''LLHook
 
@@ -61,7 +62,7 @@ llOpen = do
   logInfo "Registering low-level Windows keyboard hook"
   liftIO $ do
     tid <- async grab_kb
-    buf <- mallocBytes $ sizeOf (undefined :: WinKeyEvent)
+    buf <- mallocBytes $ sizeOf (undefined :: WindowsEvent)
     pure $ LLHook tid buf
 
 -- | Ask windows to unregister the hook and free the data-buffer
@@ -81,4 +82,6 @@ llRead ll = do
   we <- liftIO $ do
     wait_key $ ll^.buffer
     peek $ ll^.buffer
-  either throwIO pure $ fromWinKeyEvent we
+  case fromWindowsEvent we of
+    Just f  -> now f
+    Nothing -> error "Received unparseable Windows event"-- FIXME: better error-handling

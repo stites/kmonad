@@ -37,6 +37,7 @@ module KMonad.Keyboard.Types
   , matchCode
   , kc
   , keynames
+  , _RawName
 
     -- * Switch
     -- $switch
@@ -72,11 +73,11 @@ import qualified RIO.HashSet as S
 import qualified RIO.Text    as T
 
 #ifdef linux_HOST_OS
-import KMonad.Keyboard.Linux.Keycode (Keycode, osKeynames, osAliases)
+import KMonad.Keyboard.Linux.Keycode
 #endif
 
 #ifdef mingw32_HOST_OS
-import KMonad.Keyboard.Windows.Keycode (Keycode, osKeynames, osAliases)
+import KMonad.Keyboard.Windows.Keycode
 #endif
 
 
@@ -142,7 +143,7 @@ _Keyname = prism' textDisplay lookupCode
 instance Display Keycode where
   textDisplay k = "Keycode " <> case M.lookup k codeToName of
     Just t  -> t
-    Nothing -> "<unnamed: " <> rawPrint k <> ">"
+    Nothing -> "<unnamed: " <> _RawName # k <> ">"
    
 -- | The set of all valid 'Keyname's
 keynames :: S.HashSet Keyname

@@ -10,21 +10,13 @@ Portability : non-portable (MPTC with FD, FFI to Linux-only c-code)
 
 -}
 module KMonad.Keyboard.Linux.Types
-  -- ( -- * The LinuxEvent datatype, its constructors, and instances
-  --   -- $types
-  --   LinuxEvent(..)
-  -- , linuxKeyEvent
-  -- , sync
-
-  --   -- * Casting between 'KeyEvent' and 'LinuxEvent'
-  --   -- $linuxev
-  -- , toLinuxEvent
-  -- , fromLinuxEvent
-
-  --   -- * Reexport common modules
-  -- , module KMonad.Keyboard
-  -- , module KMonad.Keyboard.IO
-  -- )
+  ( -- * The LinuxEvent datatype, its constructors, and instances
+    -- $types
+    LinuxEvent(..)
+  , HasLinuxEvent(..)
+  , _LinuxEvent
+  , sync
+  )
 where
 
 import KMonad.Prelude
@@ -48,7 +40,7 @@ data LinuxEvent = LinuxEvent
   , _leCode :: !Word16  -- ^ The keycode indentifier of the key
   , _leVal  :: !Int32   -- ^ Whether a press, release, or repeat event
   } deriving (Show)
-makeLenses ''LinuxEvent
+makeClassy ''LinuxEvent
 
 -- | How we pretty-print 'LinuxEvent's
 instance Display LinuxEvent where

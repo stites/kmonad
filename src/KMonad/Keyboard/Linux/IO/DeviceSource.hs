@@ -155,7 +155,7 @@ lsRead :: (HasLogFunc e) => DeviceFile -> RIO e KeyEvent
 lsRead src = do
   bts <- B.hGet (src^.hdl) (src^.nbytes)
   case (src^.prs $ bts) of
-    Right p -> case fromLinuxEvent p of
+    Right p -> case p ^? _LinuxEvent of
       Just e  -> return e
       Nothing -> lsRead src
     Left s -> throwIO $ KeyIODecodeError s

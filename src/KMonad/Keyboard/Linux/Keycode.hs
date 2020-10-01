@@ -16,6 +16,7 @@ isolation.
 -}
 module KMonad.Keyboard.Linux.Keycode
   ( Keycode
+  , _RawName
   , osKeynames
   , osAliases
   )
@@ -23,6 +24,9 @@ module KMonad.Keyboard.Linux.Keycode
 where
 
 import KMonad.Prelude
+
+import RIO.Text (unpack)
+
 import KMonad.Keyboard.Keycode as K
 
 --------------------------------------------------------------------------------
@@ -36,9 +40,11 @@ import KMonad.Keyboard.Keycode as K
 newtype Keycode = Keycode Word16
   deriving (Eq, Ord, Enum, Num, Real, Integral, Generic, Hashable, Show)
 
--- | The raw display of a 'Keycode' is just its number
-instance RawPrint Keycode where
-  rawPrint (Keycode n) = textDisplay n
+-- | How to parse and display raw 'Keycode' values from 'Text'
+_RawName :: Prism' Text Keycode
+_RawName = prism' kc2txt txt2kc
+  where kc2txt (Keycode c) = textDisplay c
+        txt2kc t           = Keycode <$> (readMaybe . unpack) t
 
 -- | Raw data list of all 'Keycode' 'Keyname' correspondences
 osKeynames :: [(Keycode, Keyname)]

@@ -40,8 +40,8 @@ import KMonad.Keyboard.Linux.IO.UinputSink
 #endif
 
 #ifdef mingw32_HOST_OS
-import KMonad.Keyboard.IO.Windows.LowLevelHookSource
-import KMonad.Keyboard.IO.Windows.SendEventSink
+import KMonad.Keyboard.Windows.IO.LowLevelHookSource
+import KMonad.Keyboard.Windows.IO.SendEventSink
 #endif
 
 #ifdef darwin_HOST_OS
