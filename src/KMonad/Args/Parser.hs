@@ -136,13 +136,6 @@ keycodeP =  choice
     raw = prefix (char '&') >> word >>= \w ->  case w ^? _RawName of
       Just c  -> pure c
       Nothing -> empty
-    -- raw   = do
-    --   _ <- prefix (char '&')
-    --   n <- word
-    --   case n ^? _RawName of
-    --     Just c  -> pure c
-    --     Nothing -> empty
-
     named = fromNamed $ map (\t -> (t, kc t)) $ toList keynames
 
  
@@ -311,7 +304,7 @@ itokenP = choice . map try $
 otokenP :: Parser OToken
 otokenP = choice . map try $
   [ statement "uinput-sink"     $ KUinputSink <$> lexeme textP <*> optional textP
-  , statement "send-event-sink" $ pure KSendEventSink
+  , statement "send-event-sink" $ KSendEventSink <$> lexeme numP <*> lexeme numP
   , statement "kext"            $ pure KKextSink]
 
 -- | Parse the DefCfg token

@@ -2,7 +2,7 @@
 ;; Basic system config
 (defcfg
   input  (low-level-hook)
-  output (send-event-sink)
+  output (send-event-sink 500 100)
   )
 
 (defalias

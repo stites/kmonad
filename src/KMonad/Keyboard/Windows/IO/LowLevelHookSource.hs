@@ -84,4 +84,5 @@ llRead ll = do
     peek $ ll^.buffer
   case fromWindowsEvent we of
     Just f  -> now f
-    Nothing -> error "Received unparseable Windows event"-- FIXME: better error-handling
+    Nothing -> llRead ll
+    -- Nothing -> error "Received unparseable Windows event"-- FIXME: better error-handling

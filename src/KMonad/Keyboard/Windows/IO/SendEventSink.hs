@@ -19,7 +19,7 @@ where
 import KMonad.Prelude
 
 import Foreign.Ptr
-import Foreign.Marshal
+import Foreign.Marshal hiding (void)
 import Foreign.Storable
 
 import KMonad.Keyboard
@@ -38,9 +38,6 @@ import qualified RIO.HashMap as M
 foreign import ccall "sendKey"
   c_sendKey :: Ptr WindowsEvent -> IO ()
 
-sendKey :: Ptr WindowsEvent -> WindowsEvent -> IO ()
-sendKey ptr e = poke ptr e >> c_sendKey ptr
- 
 --------------------------------------------------------------------------------
 -- $rep
 --
@@ -51,10 +48,9 @@ sendKey ptr e = poke ptr e >> c_sendKey ptr
 
 -- | The 'Repeater' record
 data Repeater a = Repeater
-  { _krDelay :: Milliseconds
-  , _krRate  :: Milliseconds
-  , _krFun   :: a -> IO ()
-  , _krState :: MVar (M.HashMap a (Async ()))
+  { _delay :: Milliseconds
+  , _rate  :: Milliseconds
+  , _procs :: MVar (M.HashMap a (Async ()))
   }
 makeClassy ''Repeater
 
@@ -62,59 +58,88 @@ makeClassy ''Repeater
 mkRepeater :: Hashable a
   => Milliseconds       -- ^ Delay until we start repeating
   -> Milliseconds       -- ^ Time between repeats
-  -> (a -> IO ())       -- ^ How to decide what to do
   -> RIO e (Repeater a) -- ^ The environment
-mkRepeater d r f = Repeater d r f <$> newMVar M.empty
+mkRepeater d r = Repeater d r <$> newMVar M.empty
 
-repStart :: HasRepeater e a => a -> RIO e ()
-repStart = do
-  undefined
+-- | Create an IO action that waits the appropriate time and then repeats forever
+mkProc :: HasRepeater e a => IO b -> RIO e b
+mkProc io = do
+  waitMS =<< view delay
+  forever $ liftIO io >> (waitMS =<< view rate)
+ 
+-- | Start repeating an action and store its identifier
+repStart :: (HasRepeater e a, Hashable a, Eq a)
+  => a        -- ^ The index to store this action under
+  -> IO ()    -- ^ The action to repeat in the background
+  -> RIO e () -- ^ The resulting action
+repStart c io = do
+  a <- async $ (void $ mkProc io)
+  m <- view procs
+  modifyMVar_ m $ \ps -> pure $ M.insert c a ps
 
-repStop :: HasRepeater e a => a -> RIO e ()
-repStop = do
-  undefined
+-- | Stop the action
+repStop :: (HasRepeater e a, Hashable a, Eq a) => a -> RIO e ()
+repStop c = do
+  m <- view procs
+  modifyMVar_ m $ \ps -> do
+    case M.lookup c ps of
+      Nothing -> pure ps
+      Just a -> do
+        cancel a
+        pure $ M.delete c ps
 
 --------------------------------------------------------------------------------
 
+-- | The environment we need to perform the sink operations
+data SendEnv = SendEnv
+  { _ptr  :: Ptr WindowsEvent -- ^ Pointer used to communicate with C
+  , _rep  :: Repeater Keycode -- ^ Repeater environment
+  , _logF :: LogFunc          -- ^ Log-function
+  }
+makeClassy ''SendEnv
+
+instance HasLogFunc  SendEnv         where logFuncL = logF
+instance HasRepeater SendEnv Keycode where repeater = rep
+
+-- | Type alias for IO inside 'SendEnv'
+type S a = RIO SendEnv a
 
 -- | Return a 'KeySink' using Window's @sendEvent@ functionality.
 sendEventKeySink :: HasLogFunc e
   => Milliseconds -- ^ Delay before a key starts repeating
   -> Milliseconds -- ^ Time between key-repeats
   -> RIO e (Acquire KeySink)
-sendEventKeySink d r = mkKeySink (skOpen d r) skClose skSend
+sendEventKeySink d r =
+  let open   = skOpen d r
+      clse v = runRIO v skClose
+      send v = runRIO v . skSend
+  in mkKeySink open clse send
 
-
--- | The SKSink environment
-data SKSink = SKSink
-  { _buffer :: Ptr WindowsEvent
-  , _keyRep :: Repeater Keycode -- ^ Repeat settings
-  }
-makeClassy ''SKSink
-
--- instance HasRepeater SKSink Keycode where repeater = keyRep
-
-
--- | Create the 'SKSink' environment
-skOpen :: HasLogFunc e => Milliseconds -> Milliseconds -> RIO e SKSink
+-- | Create the 'Wenv' environment
+skOpen :: HasLogFunc e => Milliseconds -> Milliseconds -> RIO e SendEnv
 skOpen d r = do
   logInfo "Initializing Windows key sink"
-  ptr <- liftIO $ mallocBytes (sizeOf (undefined :: WindowsEvent))
-  rep <- mkRepeater d r (sendKey ptr)
-  pure $ SKSink ptr rep
+  pt <- liftIO $ mallocBytes (sizeOf (undefined :: WindowsEvent))
+  rp <- mkRepeater d r
+  lf  <- view logFuncL
+  pure $ SendEnv pt rp lf
 
--- | Close the 'SKSink' environment
-skClose :: HasLogFunc e => SKSink -> RIO e ()
-skClose sk = do
+-- | Close the 'Wenv' environment
+skClose :: S ()
+skClose = do
   logInfo "Closing Windows key sink"
-  liftIO . free $ sk^.buffer
+  liftIO . free =<< view ptr
 
-repPress :: Keycode -> IO ()
-repPress = undefined
+-- | Send a 'WindowsEvent' to Windows
+sendKey :: WindowsEvent -> S ()
+sendKey e = view ptr >>= \buf -> liftIO (poke buf e >> c_sendKey buf)
 
 -- | Write an event to the pointer and prompt windows to inject it
-skSend :: HasLogFunc e => SKSink -> KeyEvent -> RIO e ()
-skSend sk e = go $ toWindowsEvent e
-  where go e' = liftIO $ do
-          poke (sk^.buffer) e'
-          sendKey $ sk^.buffer
+skSend :: KeyEvent -> S ()
+skSend e = do
+  let e' = toWindowsEvent e
+  u <- askRunInIO
+  sendKey e'
+  if isPress e
+    then repStart (e^.keycode) (u $ sendKey e')
+    else repStop  (e^.keycode)

@@ -157,7 +157,7 @@ data IToken
 -- | All different output-tokens KMonad can take
 data OToken
   = KUinputSink Text (Maybe Text)
-  | KSendEventSink
+  | KSendEventSink Int Int
   | KKextSink
   deriving Show
 

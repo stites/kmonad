@@ -19,6 +19,7 @@ module KMonad.Util
   , tDiff
   , now
   , systemTime
+  , waitMS
 
     -- * Random utility helpers that have no better home
   , onErr
@@ -69,6 +70,11 @@ now f = f <$> getCurrentTime
 systemTime :: Iso' UTCTime SystemTime
 systemTime = iso utcToSystemTime systemToUTCTime
 
+-- | Pause processing for @n@ `Milliseconds`
+waitMS :: MonadIO m => Milliseconds -> m ()
+waitMS = threadDelay . (1000*) . fromIntegral
+
+
 --------------------------------------------------------------------------------
 -- $util
 
@@ -113,6 +119,7 @@ logRethrow t e = do
   logError $ display t <> ": " <> display e
   throwIO e
 
+
 --------------------------------------------------------------------------------
 -- $launch
 --
@@ -128,11 +135,11 @@ withLaunch :: HasLogFunc e
   -> ((Async a) -> RIO e b) -- ^ The foreground action to run
   -> RIO e b                -- ^ The resulting action
 withLaunch n a f = do
-  logInfo $ "Launching process: " <> display n
+  logDebug $ "Launching process: " <> display n
   withAsync
    (forever a
     `catch`   logRethrow ("Encountered error in <" <> textDisplay n <> ">")
-    `finally` logInfo    ("Closing process: " <> display n))
+    `finally` logDebug   ("Closing process: " <> display n))
    (\a' -> link a' >> f a')
 
 -- | Like withLaunch, but without ever needing access to the async process
