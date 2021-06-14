@@ -1,6 +1,7 @@
 { mkDerivation, base, cereal, lens, megaparsec, mtl
 , optparse-applicative, resourcet, rio, stdenv, time, unix
 , unliftio
+, lib
 }:
 mkDerivation {
   pname = "kmonad";
@@ -15,5 +16,5 @@ mkDerivation {
   executableHaskellDepends = [ base ];
   doHaddock = false;
   description = "Advanced keyboard remapping utility";
-  license = stdenv.lib.licenses.mit;
+  license = lib.licenses.mit;
 }
